@@ -1,8 +1,11 @@
 import tkinter as tk
-import os, subprocess, threading, webbrowser, json
+import os, subprocess, threading, webbrowser, json, psutil
+
+ytdlp = None
 
 def download():
     disableAll()
+    abort_button.config(state="normal")
 
     config_data = loadConfig()
     saveto = saveto_entry.get()
@@ -16,6 +19,18 @@ def download():
     filename = filename_entry.get()
 
     args = [url]
+
+    allow_filename = True
+    if filename:
+        if "youtube.com" in url:
+            if "playlist?" in url or "&list=" in url:
+                allow_filename = False
+
+    if allow_filename:
+        args.extend(["-o", filename])
+
+    args.extend(["-P", saveto])
+
     if type_selected == "audio":
         args.extend(["-x"])
     elif type_selected == "videop":
@@ -29,11 +44,6 @@ def download():
         args.extend(["--audio-format", "mp3"])
     elif type_selected != "audio" and video_format_selected == "mp4":
         args.extend(["-f", "137+140"])
-
-    args.extend(["-P", saveto])
-
-    if filename:
-        args.extend(["-o", filename])
     
     if not os.path.exists(saveto):
         os.makedirs(saveto)
@@ -42,42 +52,54 @@ def download():
         threading.Thread(target=runScript, args=(args,), daemon=True).start()
 
 def runScript(args):
-    console.config(state="normal")
-    console.delete("1.0", tk.END)
-    console.insert(tk.END, f"> yt-dlp {" ".join(args)}\n\n")
-    console.config(state="disabled")
+    global ytdlp
+    consoleReplaceText(f"> yt-dlp {" ".join(args)}\n\n")
 
-    process = subprocess.Popen(["yt-dlp.exe"] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1, creationflags=subprocess.CREATE_NO_WINDOW)
-    replace = False
-    for line in iter(process.stdout.readline, ''):
-        console.config(state="normal")
+    try:
+        ytdlp = subprocess.Popen(["yt-dlp.exe"] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1, creationflags=subprocess.CREATE_NO_WINDOW)
+        replace = False
+        for line in iter(ytdlp.stdout.readline, ''):
+            console.config(state="normal")
 
-        if line[:10] == "[download]":
-            if not replace:
-                replace = True
-            else:
-                previous_line = f"{int(console.index("insert").split(".")[0]) - 1}"
-                first_char = f"{previous_line}.0"
-                last_char = console.index(f"{previous_line}.end+1c")
+            if line[:10] == "[download]":
+                if not replace:
+                    replace = True
+                else:
+                    previous_line = f"{int(console.index("insert").split(".")[0]) - 1}"
+                    first_char = f"{previous_line}.0"
+                    last_char = console.index(f"{previous_line}.end+1c")
 
-                console.delete(first_char, last_char)
+                    console.delete(first_char, last_char)
 
-                if line[11:15] == "100%":
-                    replace = False
+                    if line[11:15] == "100%":
+                        replace = False
 
-        console.insert(tk.END, line)
-        console.yview(tk.END)
-        console.config(state="disabled")
-    for line in iter(process.stderr.readline, ''):
-        console.config(state="normal")
-        console.insert(tk.END, line)
-        console.yview(tk.END)
-        console.config(state="disabled")
-    process.stdout.close()
-    process.stderr.close()
-    process.wait()
+            console.insert(tk.END, line)
+            console.yview(tk.END)
+            console.config(state="disabled")
+        for line in iter(ytdlp.stderr.readline, ''):
+            console.config(state="normal")
+            console.insert(tk.END, line)
+            console.yview(tk.END)
+            console.config(state="disabled")
+        ytdlp.stdout.close()
+        ytdlp.stderr.close()
+        ytdlp.wait()
+
+    except AttributeError: # if ytdlp is None
+        pass
 
     enableAll()
+    abort_button.config(state="disabled")
+
+def abort():
+    global ytdlp
+    if ytdlp and ytdlp.poll() is None:
+        process = psutil.Process(ytdlp.pid)
+        for child in process.children(recursive=True):
+            child.terminate()
+        process.terminate()
+        ytdlp = None
 
 def update():
     if checkFiles():
@@ -89,19 +111,15 @@ def update():
 def refresh():
     if checkFiles():
         refresh_button.pack_forget()
-        about_button.pack_forget()
-        download_button.pack(side=tk.LEFT, padx=5)
-        update_button.pack(side=tk.LEFT, padx=5)
-        about_button.pack(side=tk.LEFT, padx=5)
-
         enableAll()
+        consoleReplaceText("Ready")
 
 def about():
     about_window = tk.Toplevel(root)
     about_window.title("About")
     about_window.geometry("260x150")
     
-    about_info = tk.Label(about_window, text="yt-dlp Simple GUI v1.0.0\nby Mesph")
+    about_info = tk.Label(about_window, text="yt-dlp Simple GUI v1.1.0\nby Mesph")
     about_link = tk.Label(about_window, text="https://github.com/Mesph/yt-dlp-simple-gui", fg="blue", cursor="hand2")
 
     about_info.pack(pady=10)
@@ -119,17 +137,15 @@ def checkFiles():
     return os.path.isfile("yt-dlp.exe") and os.path.isfile("ffmpeg.exe")
 
 def missingFiles():
+    consoleReplaceText(f"One or both of these files are missing: 'yt-dlp.exe' and 'ffmpeg.exe'\nDownload them from the internet and place them inside the directory:\n{roaming}\nClick 'Refresh' when you're done")
+    disableAll()
+    refresh_button.pack(side=tk.LEFT, padx=5)
+
+def consoleReplaceText(text):
     console.config(state="normal")
     console.delete("1.0", tk.END)
-    console.insert(tk.END, f"One or both of these files are missing: 'yt-dlp.exe' and 'ffmpeg.exe'\nDownload them from the internet and place them inside the directory:\n{roaming}\nClick 'Refresh' when you're done")
+    console.insert(tk.END, text)
     console.config(state="disabled")
-
-    disableAll()
-    download_button.pack_forget()
-    update_button.pack_forget()
-    about_button.pack_forget()
-    refresh_button.pack(side=tk.LEFT, padx=5)
-    about_button.pack(side=tk.LEFT, padx=5)
 
 def loadConfig():
     if os.path.exists(config):
@@ -145,6 +161,7 @@ def enableAll():
     videof_radio.config(state="normal")
     videop_radio.config(state="normal")
     download_button.config(state="normal")
+    abort_button.config(state="normal")
     update_button.config(state="normal")
 
     if type_selected == "videop":
@@ -173,6 +190,7 @@ def disableAll():
     webm_radio.config(state="disabled")
     mp4_radio.config(state="disabled")
     download_button.config(state="disabled")
+    abort_button.config(state="disabled")
     update_button.config(state="disabled")
 
 def selectType():
@@ -311,13 +329,17 @@ buttons_frame = tk.Frame(root)
 buttons_frame.pack(anchor=tk.W)
 
 download_button = tk.Button(buttons_frame, text="Download", command=download)
+abort_button = tk.Button(buttons_frame, text="Abort", command=abort)
 update_button = tk.Button(buttons_frame, text="Update yt-dlp", command=update)
 refresh_button = tk.Button(buttons_frame, text="Refresh", command=refresh)
 about_button = tk.Button(buttons_frame, text="About", command=about)
 
 download_button.pack(side=tk.LEFT, padx=5)
+abort_button.pack(side=tk.LEFT, padx=5)
 update_button.pack(side=tk.LEFT, padx=5)
 about_button.pack(side=tk.LEFT, padx=5)
+
+abort_button.config(state="disabled")
 
 # console frame
 console_frame = tk.Frame(root, padx=10, pady=10)
@@ -337,8 +359,7 @@ if __name__ == "__main__":
     os.chdir(roaming)
 
     if checkFiles():
-        console.insert(tk.END, "Ready")
-        console.config(state="disabled")
+        consoleReplaceText("Ready")
     else:
         missingFiles()
 
