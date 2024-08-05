@@ -5,7 +5,6 @@ ytdlp = None
 
 def download():
     disableAll()
-    abort_button.config(state="normal")
 
     config_data = loadConfig()
     saveto = saveto_entry.get()
@@ -25,6 +24,8 @@ def download():
         if "youtube.com" in url:
             if "playlist?" in url or "&list=" in url:
                 allow_filename = False
+    else:
+        allow_filename = False
 
     if allow_filename:
         args.extend(["-o", filename])
@@ -50,6 +51,8 @@ def download():
 
     if checkFiles():
         threading.Thread(target=runScript, args=(args,), daemon=True).start()
+    else:
+        missingFiles()
 
 def runScript(args):
     global ytdlp
@@ -90,7 +93,6 @@ def runScript(args):
         pass
 
     enableAll()
-    abort_button.config(state="disabled")
 
 def abort():
     global ytdlp
@@ -103,7 +105,7 @@ def abort():
 
 def update():
     if checkFiles():
-        disableAll()
+        disableAll(True)
         threading.Thread(target=runScript, args=(["-U"],), daemon=True).start()
     else:
         missingFiles()
@@ -119,7 +121,7 @@ def about():
     about_window.title("About")
     about_window.geometry("260x150")
     
-    about_info = tk.Label(about_window, text="yt-dlp Simple GUI v1.1.0\nby Mesph")
+    about_info = tk.Label(about_window, text="yt-dlp Simple GUI v1.1.1\nby Mesph")
     about_link = tk.Label(about_window, text="https://github.com/Mesph/yt-dlp-simple-gui", fg="blue", cursor="hand2")
 
     about_info.pack(pady=10)
@@ -131,14 +133,14 @@ def about():
     close_button.pack(pady=10)
 
 def openLink(event):
-    webbrowser.open_new(r"https://github.com/mesph/yt-dlp-simple-gui")
+    webbrowser.open_new(r"https://github.com/Mesph/yt-dlp-simple-gui")
 
 def checkFiles():
     return os.path.isfile("yt-dlp.exe") and os.path.isfile("ffmpeg.exe")
 
 def missingFiles():
     consoleReplaceText(f"One or both of these files are missing: 'yt-dlp.exe' and 'ffmpeg.exe'\nDownload them from the internet and place them inside the directory:\n{roaming}\nClick 'Refresh' when you're done")
-    disableAll()
+    disableAll(True)
     refresh_button.pack(side=tk.LEFT, padx=5)
 
 def consoleReplaceText(text):
@@ -153,7 +155,7 @@ def loadConfig():
             return json.load(file)
     return {"saveto": f"{os.path.expanduser("~")}\\Downloads\\yt-dlp"}
 
-def enableAll():
+def enableAll(abort=False):
     url_entry.config(state="normal")
     filename_entry.config(state="normal")
     saveto_entry.config(state="normal")
@@ -161,7 +163,6 @@ def enableAll():
     videof_radio.config(state="normal")
     videop_radio.config(state="normal")
     download_button.config(state="normal")
-    abort_button.config(state="normal")
     update_button.config(state="normal")
 
     if type_selected == "videop":
@@ -176,7 +177,13 @@ def enableAll():
         webm_radio.config(state="normal")
         mp4_radio.config(state="normal")
 
-def disableAll():
+    if abort:
+        state = "normal"
+    else:
+        state="disabled"
+    abort_button.config(state=state)
+
+def disableAll(abort=False):
     url_entry.config(state="readonly")
     filename_entry.config(state="readonly")
     saveto_entry.config(state="readonly")
@@ -190,8 +197,13 @@ def disableAll():
     webm_radio.config(state="disabled")
     mp4_radio.config(state="disabled")
     download_button.config(state="disabled")
-    abort_button.config(state="disabled")
     update_button.config(state="disabled")
+
+    if abort:
+        state = "disabled"
+    else:
+        state="normal"
+    abort_button.config(state=state)
 
 def selectType():
     global type_selected
