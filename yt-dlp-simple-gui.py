@@ -49,12 +49,12 @@ def download():
 
 def runScript(args):
     global ytdlp
-    consoleReplaceText(f"> yt-dlp {" ".join(args)}\n\n")
+    consoleReplaceText(f'> yt-dlp {" ".join(args)}\n\n')
 
     try:
         ytdlp = subprocess.Popen(["yt-dlp.exe"] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1, creationflags=subprocess.CREATE_NO_WINDOW)
         replace = False
-        for line in iter(ytdlp.stdout.readline, ''):
+        for line in iter(ytdlp.stdout.readline, ""):
             console.config(state="normal")
 
             if line[:10] == "[download]":
@@ -105,7 +105,7 @@ def about():
     about_window.title("About")
     about_window.geometry("260x150")
     
-    info_label = tk.Label(about_window, text="yt-dlp Simple GUI v1.2.0\nby Mesph")
+    info_label = tk.Label(about_window, text="yt-dlp Simple GUI v1.2.1\nby Mesph")
     link_label = tk.Label(about_window, text="https://github.com/Mesph/yt-dlp-simple-gui", fg="blue", cursor="hand2")
     close_button = tk.Button(about_window, text="Close", command=about_window.destroy)
 
