@@ -61,7 +61,7 @@ def runScript(args):
                 if not replace:
                     replace = True
                 else:
-                    previous_line = f"{int(console.index("insert").split(".")[0]) - 1}"
+                    previous_line = f'{int(console.index("insert").split(".")[0]) - 1}'
                     first_char = f"{previous_line}.0"
                     last_char = console.index(f"{previous_line}.end+1c")
 
@@ -105,7 +105,7 @@ def about():
     about_window.title("About")
     about_window.geometry("260x150")
     
-    info_label = tk.Label(about_window, text="yt-dlp Simple GUI v1.2.1\nby Mesph")
+    info_label = tk.Label(about_window, text="yt-dlp Simple GUI v1.2.2\nby Mesph")
     link_label = tk.Label(about_window, text="https://github.com/Mesph/yt-dlp-simple-gui", fg="blue", cursor="hand2")
     close_button = tk.Button(about_window, text="Close", command=about_window.destroy)
 
@@ -363,7 +363,7 @@ if __name__ == "__main__":
         if readConfig():
             savepath = readConfig()["savepath"]
         else:
-            savepath = f"{os.path.expanduser("~")}\\Downloads\\yt-dlp"
+            savepath = f'{os.path.expanduser("~")}\\Downloads\\yt-dlp'
             writeConfig({"savepath": savepath})
         savepath_entry.insert(0, savepath)
 
