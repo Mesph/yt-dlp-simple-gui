@@ -1,18 +1,15 @@
 import tkinter as tk
-import os, subprocess, threading, webbrowser, json, psutil
+from tkinter import messagebox
+import os, subprocess, threading, webbrowser, json, psutil, sys
 
 ytdlp = None
 
 def download():
     disableAll()
 
-    config_data = loadConfig()
-    saveto = saveto_entry.get()
-
-    if saveto != config_data["saveto"]:
-        config_data["saveto"] = saveto
-        with open(config, 'w') as file:
-            json.dump(config_data, file, indent=4)
+    savepath = savepath_entry.get()
+    if savepath != readConfig()["savepath"]:
+        writeConfig({"savepath": savepath})
 
     url = url_entry.get()
     filename = filename_entry.get()
@@ -21,16 +18,15 @@ def download():
 
     allow_filename = True
     if filename:
-        if "youtube.com" in url:
-            if "playlist?" in url or "&list=" in url:
-                allow_filename = False
+        if "youtube.com" in url and ("playlist?" in url or "&list=" in url):
+            allow_filename = False
     else:
         allow_filename = False
 
     if allow_filename:
         args.extend(["-o", filename])
 
-    args.extend(["-P", saveto])
+    args.extend(["-P", savepath])
 
     if type_selected == "audio":
         args.extend(["-x"])
@@ -46,13 +42,10 @@ def download():
     elif type_selected != "audio" and video_format_selected == "mp4":
         args.extend(["-f", "137+140"])
     
-    if not os.path.exists(saveto):
-        os.makedirs(saveto)
+    if not os.path.exists(savepath):
+        os.makedirs(savepath)
 
-    if checkFiles():
-        threading.Thread(target=runScript, args=(args,), daemon=True).start()
-    else:
-        missingFiles()
+    threading.Thread(target=runScript, args=(args,), daemon=True).start()
 
 def runScript(args):
     global ytdlp
@@ -104,44 +97,26 @@ def abort():
         ytdlp = None
 
 def update():
-    if checkFiles():
-        disableAll(True)
-        threading.Thread(target=runScript, args=(["-U"],), daemon=True).start()
-    else:
-        missingFiles()
-
-def refresh():
-    if checkFiles():
-        refresh_button.pack_forget()
-        enableAll()
-        consoleReplaceText("Ready")
+    disableAll(True)
+    threading.Thread(target=runScript, args=(["-U"],), daemon=True).start()
 
 def about():
     about_window = tk.Toplevel(root)
     about_window.title("About")
     about_window.geometry("260x150")
     
-    about_info = tk.Label(about_window, text="yt-dlp Simple GUI v1.1.1\nby Mesph")
-    about_link = tk.Label(about_window, text="https://github.com/Mesph/yt-dlp-simple-gui", fg="blue", cursor="hand2")
-
-    about_info.pack(pady=10)
-    about_link.pack(pady=10)
-
-    about_link.bind("<Button-1>", openLink)
-    
+    info_label = tk.Label(about_window, text="yt-dlp Simple GUI v1.2.0\nby Mesph")
+    link_label = tk.Label(about_window, text="https://github.com/Mesph/yt-dlp-simple-gui", fg="blue", cursor="hand2")
     close_button = tk.Button(about_window, text="Close", command=about_window.destroy)
+
+    link_label.bind("<Button-1>", openLink)
+
+    info_label.pack(pady=10)
+    link_label.pack(pady=10)
     close_button.pack(pady=10)
 
 def openLink(event):
     webbrowser.open_new(r"https://github.com/Mesph/yt-dlp-simple-gui")
-
-def checkFiles():
-    return os.path.isfile("yt-dlp.exe") and os.path.isfile("ffmpeg.exe")
-
-def missingFiles():
-    consoleReplaceText(f"One or both of these files are missing: 'yt-dlp.exe' and 'ffmpeg.exe'\nDownload them from the internet and place them inside the directory:\n{roaming}\nClick 'Refresh' when you're done")
-    disableAll(True)
-    refresh_button.pack(side=tk.LEFT, padx=5)
 
 def consoleReplaceText(text):
     console.config(state="normal")
@@ -149,16 +124,10 @@ def consoleReplaceText(text):
     console.insert(tk.END, text)
     console.config(state="disabled")
 
-def loadConfig():
-    if os.path.exists(config):
-        with open(config, "r") as file:
-            return json.load(file)
-    return {"saveto": f"{os.path.expanduser("~")}\\Downloads\\yt-dlp"}
-
 def enableAll(abort=False):
     url_entry.config(state="normal")
     filename_entry.config(state="normal")
-    saveto_entry.config(state="normal")
+    savepath_entry.config(state="normal")
     audio_radio.config(state="normal")
     videof_radio.config(state="normal")
     videop_radio.config(state="normal")
@@ -174,19 +143,22 @@ def enableAll(abort=False):
         mp3_radio.config(state="normal")
 
     if type_selected != "audio":
-        webm_radio.config(state="normal")
         mp4_radio.config(state="normal")
+        if type_selected == "videof":
+            webm_radio.config(state="normal")
+        else:
+            webm_radio.config(state="disabled")
 
     if abort:
         state = "normal"
     else:
-        state="disabled"
+        state = "disabled"
     abort_button.config(state=state)
 
 def disableAll(abort=False):
     url_entry.config(state="readonly")
     filename_entry.config(state="readonly")
-    saveto_entry.config(state="readonly")
+    savepath_entry.config(state="readonly")
     audio_radio.config(state="disabled")
     videof_radio.config(state="disabled")
     videop_radio.config(state="disabled")
@@ -202,7 +174,7 @@ def disableAll(abort=False):
     if abort:
         state = "disabled"
     else:
-        state="normal"
+        state = "normal"
     abort_button.config(state=state)
 
 def selectType():
@@ -224,11 +196,16 @@ def selectType():
     mp3_radio.config(state=new_state)
 
     if type_selected != "audio":
-        new_state = "normal"
+        mp4_radio.config(state="normal")
+        if type_selected == "videof":
+            webm_radio.config(state="normal")
+        else:
+            webm_radio.config(state="disabled")
+            video_format.set("mp4")
+            global video_format_selected
+            video_format_selected = "mp4"
     else:
-        new_state = "disabled"
-    webm_radio.config(state=new_state)
-    mp4_radio.config(state=new_state)
+        mp4_radio.config(state="disabled")
 
 def selectAudioFormat():
     global audio_format_selected
@@ -237,6 +214,21 @@ def selectAudioFormat():
 def selectVideoFormat():
     global video_format_selected
     video_format_selected = video_format.get()
+
+def filePath():
+    if getattr(sys,"frozen", False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(__file__)
+
+def readConfig():
+    if os.path.exists("config.json"):
+        with open("config.json", "r") as file:
+            return json.load(file)
+    return None
+
+def writeConfig(data):
+    with open("config.json", 'w') as file:
+        json.dump(data, file, indent=4)
 
 root = tk.Tk()
 root.title("yt-dlp Simple GUI")
@@ -264,15 +256,15 @@ filename_label.pack(side=tk.LEFT)
 filename_entry.pack(side=tk.LEFT)
 filename_default_label.pack(side=tk.LEFT)
 
-# saveto frame
-saveto_frame = tk.Frame(root)
-saveto_frame.pack(anchor=tk.W)
+# savepath frame
+savepath_frame = tk.Frame(root)
+savepath_frame.pack(anchor=tk.W)
 
-saveto_label = tk.Label(saveto_frame, text="Save to:     ")
-saveto_entry = tk.Entry(saveto_frame, width=94)
+savepath_label = tk.Label(savepath_frame, text="Save to:     ")
+savepath_entry = tk.Entry(savepath_frame, width=94)
 
-saveto_label.pack(side=tk.LEFT)
-saveto_entry.pack(side=tk.LEFT)
+savepath_label.pack(side=tk.LEFT)
+savepath_entry.pack(side=tk.LEFT)
 
 # type frames
 audio_frame = tk.Frame(root)
@@ -343,7 +335,6 @@ buttons_frame.pack(anchor=tk.W)
 download_button = tk.Button(buttons_frame, text="Download", command=download)
 abort_button = tk.Button(buttons_frame, text="Abort", command=abort)
 update_button = tk.Button(buttons_frame, text="Update yt-dlp", command=update)
-refresh_button = tk.Button(buttons_frame, text="Refresh", command=refresh)
 about_button = tk.Button(buttons_frame, text="About", command=about)
 
 download_button.pack(side=tk.LEFT, padx=5)
@@ -360,19 +351,20 @@ console_frame.pack(anchor=tk.W)
 console = tk.Text(console_frame, height=16, width=77)
 console.pack(side=tk.LEFT)
 
+
 if __name__ == "__main__":
-    roaming = os.path.join(os.getenv("APPDATA"), "yt-dlp-simple-gui")
-    config = f"{roaming}\\config.json"
-    saveto_entry.insert(0, loadConfig()["saveto"])
+    os.chdir(filePath())
 
-    if not os.path.exists(roaming):
-        os.mkdir(roaming)
-
-    os.chdir(roaming)
-
-    if checkFiles():
-        consoleReplaceText("Ready")
+    if not os.path.isfile("yt-dlp.exe") or not os.path.isfile("ffmpeg.exe"):
+        root.withdraw()
+        messagebox.showinfo("yt-dlp Simple GUI", "One or both of these files are missing:\n'yt-dlp.exe' and 'ffmpeg.exe'\nDownload them from the internet and place them in the same directory as this executable")
+        sys.exit()
     else:
-        missingFiles()
+        if readConfig():
+            savepath = readConfig()["savepath"]
+        else:
+            savepath = f"{os.path.expanduser("~")}\\Downloads\\yt-dlp"
+            writeConfig({"savepath": savepath})
+        savepath_entry.insert(0, savepath)
 
-    root.mainloop()
+        root.mainloop()
