@@ -1,10 +1,10 @@
 # yt-dlp-simple-gui
 
-![https://i.imgur.com/EyCLheH.png](https://i.imgur.com/EyCLheH.png)
+![https://i.imgur.com/c7kOXfZ.png](https://i.imgur.com/c7kOXfZ.png)
 
 **yt-dlp Simple GUI** is a graphical user interface (GUI) for [yt-dlp](https://github.com/yt-dlp/yt-dlp), created using tkinter for Python.
 
-This program was created with the intent of being as easy as possible to use, and to prevent the use of commands into the command prompt.
+This program was created to offer a simple alternative to typing commands into a console.
 
 ## Installation
 
@@ -21,18 +21,20 @@ This program only works on Windows 10/11, but a Linux build is in the works.
 
 ## Usage
 
-![https://i.imgur.com/DMYonb0.png](https://i.imgur.com/DMYonb0.png)
+![https://i.imgur.com/ocpFqKd.png](https://i.imgur.com/ocpFqKd.png)
 
 First, you'll need to paste a link to the URL box. You can then select a name for the file, and you can also change the save directory.
 
-You can download the video or convert it into audio. It's also possible to download only a section of a video. At the `Start` and `End` boxes, you can use, for example, 2:30 and 2:40, respectively, to download only those 10 seconds of the video. It also works with hours.
+Although this program writes the commands for you, you can insert additional arguments in the `Additional arguments` box.
 
-For audio, you can choose between two file formats, Opus and MP3. For video, you can choose between WebM and MP4. You can only choose the MP4 video format if you choose to download only a section of a video.
+You can download the video or convert it into audio. It's also possible to download only a section of a video. At the `Start` and `End` boxes, you can use, for example, 2:30 and 2:40, respectively, to download only 10 seconds of the video. It also works with hours.
 
-When you're done selecting the options you want, all you need to do is press the `Download` button, and the file will be saved to your computer.
+The files will be saved to your computer using the default file format chosen by `yt-dlp`, however, you can also choose to download the file in MP3 or MP4 file formats.
+
+When you're done selecting the options you want, all you need to do is press the `Download` button.
 
 You can also abort the operation at any time by pressing the `Abort` button.
 
 At the bottom there's a console, where you can see exactly which command was used to download the file, and the output.
 
-You can also update yt-dlp by pressing the `Update` button.
+Finally, you can update yt-dlp by pressing the `Update` button.
