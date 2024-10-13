@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 import os, subprocess, threading, webbrowser, json, psutil, sys
 
 ytdlp = None
@@ -44,6 +44,10 @@ def download():
     
     if not os.path.exists(savepath):
         os.makedirs(savepath)
+    
+    additional_arguments = arguments_entry.get()
+    if additional_arguments:
+        args.extend([additional_arguments])
 
     threading.Thread(target=runScript, args=(args,), daemon=True).start()
 
@@ -73,7 +77,7 @@ def runScript(args):
             console.insert(tk.END, line)
             console.yview(tk.END)
             console.config(state="disabled")
-        for line in iter(ytdlp.stderr.readline, ''):
+        for line in iter(ytdlp.stderr.readline, ""):
             console.config(state="normal")
             console.insert(tk.END, line)
             console.yview(tk.END)
@@ -86,6 +90,12 @@ def runScript(args):
         pass
 
     enableAll()
+
+def select():
+    new_savepath = filedialog.askdirectory().replace("/", "\\")
+    if new_savepath:
+        savepath_entry.delete(0, tk.END)
+        savepath_entry.insert(0, new_savepath)
 
 def abort():
     global ytdlp
@@ -105,7 +115,7 @@ def about():
     about_window.title("About")
     about_window.geometry("260x150")
     
-    info_label = tk.Label(about_window, text="yt-dlp Simple GUI v1.2.2\nby Mesph")
+    info_label = tk.Label(about_window, text="yt-dlp Simple GUI v1.3.0\nby Mesph")
     link_label = tk.Label(about_window, text="https://github.com/Mesph/yt-dlp-simple-gui", fg="blue", cursor="hand2")
     close_button = tk.Button(about_window, text="Close", command=about_window.destroy)
 
@@ -128,6 +138,8 @@ def enableAll(abort=False):
     url_entry.config(state="normal")
     filename_entry.config(state="normal")
     savepath_entry.config(state="normal")
+    select_button.config(state="normal")
+    arguments_entry.config(state="normal")
     audio_radio.config(state="normal")
     videof_radio.config(state="normal")
     videop_radio.config(state="normal")
@@ -139,15 +151,15 @@ def enableAll(abort=False):
         end_entry.config(state="normal")
     
     if type_selected == "audio":
-        opus_radio.config(state="normal")
+        default_audio_radio.config(state="normal")
         mp3_radio.config(state="normal")
 
     if type_selected != "audio":
-        mp4_radio.config(state="normal")
+        default_video_radio.config(state="normal")
         if type_selected == "videof":
-            webm_radio.config(state="normal")
+            mp4_radio.config(state="normal")
         else:
-            webm_radio.config(state="disabled")
+            mp4_radio.config(state="disabled")
 
     if abort:
         state = "normal"
@@ -159,14 +171,16 @@ def disableAll(abort=False):
     url_entry.config(state="readonly")
     filename_entry.config(state="readonly")
     savepath_entry.config(state="readonly")
+    select_button.config(state="disabled")
+    arguments_entry.config(state="readonly")
     audio_radio.config(state="disabled")
     videof_radio.config(state="disabled")
     videop_radio.config(state="disabled")
     start_entry.config(state="readonly")
     end_entry.config(state="readonly")
-    opus_radio.config(state="disabled")
+    default_audio_radio.config(state="disabled")
     mp3_radio.config(state="disabled")
-    webm_radio.config(state="disabled")
+    default_video_radio.config(state="disabled")
     mp4_radio.config(state="disabled")
     download_button.config(state="disabled")
     update_button.config(state="disabled")
@@ -192,19 +206,20 @@ def selectType():
         new_state = "normal"
     else:
         new_state = "disabled"
-    opus_radio.config(state=new_state)
+    default_audio_radio.config(state=new_state)
     mp3_radio.config(state=new_state)
 
     if type_selected != "audio":
-        mp4_radio.config(state="normal")
+        default_video_radio.config(state="normal")
         if type_selected == "videof":
-            webm_radio.config(state="normal")
+            mp4_radio.config(state="normal")
         else:
-            webm_radio.config(state="disabled")
-            video_format.set("mp4")
+            mp4_radio.config(state="disabled")
+            video_format.set("default_video")
             global video_format_selected
-            video_format_selected = "mp4"
+            video_format_selected = "default_video"
     else:
+        default_video_radio.config(state="disabled")
         mp4_radio.config(state="disabled")
 
 def selectAudioFormat():
@@ -227,12 +242,13 @@ def readConfig():
     return None
 
 def writeConfig(data):
-    with open("config.json", 'w') as file:
+    with open("config.json", "w") as file:
         json.dump(data, file, indent=4)
 
 root = tk.Tk()
 root.title("yt-dlp Simple GUI")
 root.geometry("640x480")
+root.resizable(False, False)
 
 # url frame
 url_frame = tk.Frame(root)
@@ -261,10 +277,22 @@ savepath_frame = tk.Frame(root)
 savepath_frame.pack(anchor=tk.W)
 
 savepath_label = tk.Label(savepath_frame, text="Save to:     ")
-savepath_entry = tk.Entry(savepath_frame, width=94)
+savepath_entry = tk.Entry(savepath_frame, width=87)
+select_button = tk.Button(savepath_frame, text="Select", command=select)
 
 savepath_label.pack(side=tk.LEFT)
 savepath_entry.pack(side=tk.LEFT)
+select_button.pack(side=tk.LEFT)
+
+# arguments frame
+arguments_frame = tk.Frame(root)
+arguments_frame.pack(anchor=tk.W)
+
+arguments_label = tk.Label(arguments_frame, text="Additional arguments: ")
+arguments_entry = tk.Entry(arguments_frame, width=83)
+
+arguments_label.pack(side=tk.LEFT)
+arguments_entry.pack(side=tk.LEFT)
 
 # type frames
 audio_frame = tk.Frame(root)
@@ -303,29 +331,29 @@ end_entry.config(state="disabled")
 format_frame = tk.Frame(root)
 format_frame.pack(anchor=tk.W)
 
-audio_format = tk.StringVar(value="opus")
-audio_format_selected = "opus"
+audio_format = tk.StringVar(value="default_audio")
+audio_format_selected = "default_audio"
 
-video_format = tk.StringVar(value="webm")
-video_format_selected = "webm"
+video_format = tk.StringVar(value="default_video")
+video_format_selected = "default_video"
 
 audio_format_label = tk.Label(format_frame, text="Audio format:  ")
-opus_radio = tk.Radiobutton(format_frame, text="Opus", variable=audio_format, value="opus", command=selectAudioFormat)
+default_audio_radio = tk.Radiobutton(format_frame, text="Default", variable=audio_format, value="default_audio", command=selectAudioFormat)
 mp3_radio = tk.Radiobutton(format_frame, text="MP3", variable=audio_format, value="mp3", command=selectAudioFormat)
 
 video_format_label = tk.Label(format_frame, text="  Video format:  ")
-webm_radio = tk.Radiobutton(format_frame, text="WebM", variable=video_format, value="webm", command=selectVideoFormat)
+default_video_radio = tk.Radiobutton(format_frame, text="Default", variable=video_format, value="default_video", command=selectVideoFormat)
 mp4_radio = tk.Radiobutton(format_frame, text="MP4", variable=video_format, value="mp4", command=selectVideoFormat)
 
 audio_format_label.pack(side=tk.LEFT)
-opus_radio.pack(side=tk.LEFT)
+default_audio_radio.pack(side=tk.LEFT)
 mp3_radio.pack(side=tk.LEFT)
 
 video_format_label.pack(side=tk.LEFT)
-webm_radio.pack(side=tk.LEFT)
+default_video_radio.pack(side=tk.LEFT)
 mp4_radio.pack(side=tk.LEFT)
 
-webm_radio.config(state="disabled")
+default_video_radio.config(state="disabled")
 mp4_radio.config(state="disabled")
 
 # buttons frame
@@ -348,9 +376,10 @@ abort_button.config(state="disabled")
 console_frame = tk.Frame(root, padx=10, pady=10)
 console_frame.pack(anchor=tk.W)
 
-console = tk.Text(console_frame, height=16, width=77)
+console = tk.Text(console_frame, height=15, width=77)
 console.pack(side=tk.LEFT)
 
+console.config(state="disabled")
 
 if __name__ == "__main__":
     os.chdir(filePath())
