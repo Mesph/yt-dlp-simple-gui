@@ -1,6 +1,6 @@
 # yt-dlp-simple-gui
 
-![https://i.imgur.com/c7kOXfZ.png](https://i.imgur.com/c7kOXfZ.png)
+![https://i.imgur.com/othrtNE.png](https://i.imgur.com/othrtNE.png)
 
 **yt-dlp Simple GUI** is a graphical user interface (GUI) for [yt-dlp](https://github.com/yt-dlp/yt-dlp), created using tkinter for Python.
 
@@ -21,7 +21,7 @@ This program only works on Windows 10/11, but a Linux build is in the works.
 
 ## Usage
 
-![https://i.imgur.com/ocpFqKd.png](https://i.imgur.com/ocpFqKd.png)
+![https://i.imgur.com/SGERvBS.png](https://i.imgur.com/SGERvBS.png)
 
 First, you'll need to paste a link to the URL box. You can then select a name for the file, and you can also change the save directory.
 
