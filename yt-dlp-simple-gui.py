@@ -114,8 +114,9 @@ def about():
     about_window = tk.Toplevel(root)
     about_window.title("About")
     about_window.geometry("260x150")
+    about_window.resizable(False, False)
     
-    info_label = tk.Label(about_window, text="yt-dlp Simple GUI v1.3.0\nby Mesph")
+    info_label = tk.Label(about_window, text="yt-dlp Simple GUI v1.3.1\nby Mesph")
     link_label = tk.Label(about_window, text="https://github.com/Mesph/yt-dlp-simple-gui", fg="blue", cursor="hand2")
     close_button = tk.Button(about_window, text="Close", command=about_window.destroy)
 
@@ -379,6 +380,7 @@ console_frame.pack(anchor=tk.W)
 console = tk.Text(console_frame, height=15, width=77)
 console.pack(side=tk.LEFT)
 
+console.insert(tk.END, "Ready")
 console.config(state="disabled")
 
 if __name__ == "__main__":
